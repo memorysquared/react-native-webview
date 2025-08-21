@@ -36,6 +36,21 @@ import android.webkit.CookieSyncManager;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import android.content.Context;
+import android.util.Log;
+import android.webkit.ClientCertRequest;
+import android.webkit.WebView;
+
+import java.io.InputStream;
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.security.PrivateKey;
+
+import android.util.Base64;
+import java.io.ByteArrayInputStream;
+
 public class RNCWebViewClient extends WebViewClient {
     private static String TAG = "RNCWebViewClient";
     protected static final int SHOULD_OVERRIDE_URL_LOADING_TIMEOUT = 250;
@@ -44,6 +59,9 @@ public class RNCWebViewClient extends WebViewClient {
     protected RNCWebView.ProgressChangedFilter progressChangedFilter = null;
     protected @Nullable String ignoreErrFailedForThisURL = null;
     protected @Nullable RNCBasicAuthCredential basicAuthCredential = null;
+    private X509Certificate[] mCertificates = null;
+    private PrivateKey mPrivateKey = null;
+    private Context context;
 
     public void setIgnoreErrFailedForThisURL(@Nullable String url) {
         ignoreErrFailedForThisURL = url;
@@ -159,23 +177,109 @@ public class RNCWebViewClient extends WebViewClient {
         super.onReceivedHttpAuthRequest(view, handler, host, realm);
     }
 
+    /**
+     * Handles client certificate authentication requests from the server.
+     * 
+     * This method is called when a server requires client certificate authentication.
+     * It retrieves the certificate and password from the WebView properties, loads
+     * the certificate and private key if not already cached, and proceeds with
+     * the authentication request.
+     * @param view
+     * @param request
+     */
+    @Override
+    public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
+        Log.d(TAG, "Client certificate requested by host: " + request.getHost());
+
+        Context context = view.getContext();
+
+        RNCWebView rncWebView = (RNCWebView) view;
+        String base64 = rncWebView.clientCert;
+        String password = rncWebView.clientCertPassword;
+
+        Log.d(TAG, "Client certificate passwd " + password);
+        Log.d(TAG, "Client certificate " + base64);
+        
+        if (mCertificates == null || mPrivateKey == null) {
+            Log.d(TAG, "Certificates or private key not loaded yet, loading...");
+            loadCertificateAndPrivateKey(password, base64, context, request);
+        } else {
+            Log.d(TAG, "Certificates and private key already loaded.");
+        }
+
+        if (mCertificates != null && mPrivateKey != null) {
+            Log.d(TAG, "Proceeding with client certificate for host: " + request.getHost());
+            request.proceed(mPrivateKey, mCertificates);
+        } else {
+            Log.w(TAG, "No certificate or private key available, cancelling request for host: " + request.getHost());
+            request.cancel();
+        }
+    }
+
+    /**
+     * Loads client certificate and private key from base64-encoded BKS keystore.
+     * 
+     * Decodes the base64 keystore data, loads it using the provided password,
+     * and extracts the first available private key and certificate. The loaded
+     * certificate and key are cached in class variables for subsequent use.
+     * 
+     * @param password The password to decrypt the BKS keystore
+     * @param base64 The base64-encoded BKS keystore data
+     * @param context The application context (currently unused but available for future use)
+     * @param request The ClientCertRequest that triggered this loading operation
+     * 
+     * Sets class variables:
+     * - mPrivateKey: The extracted private key for client authentication
+     * - mCertificates: Array containing the X509 certificate
+     * 
+     * @throws Exception If keystore loading, decoding, or key extraction fails
+     */
+    private void loadCertificateAndPrivateKey(String password, String base64, Context context, ClientCertRequest request) {
+        try {
+            byte[] certBytes = Base64.decode(base64, Base64.DEFAULT);
+            KeyStore keyStore = KeyStore.getInstance("BKS"); 
+            ByteArrayInputStream bais = new ByteArrayInputStream(certBytes);
+            Log.d(TAG, "Loading keystore with password...");
+            keyStore.load(bais, password.toCharArray());
+
+            String alias = keyStore.aliases().nextElement();
+
+            Key key = keyStore.getKey(alias, password.toCharArray());
+            if (key instanceof PrivateKey) {
+                mPrivateKey = (PrivateKey) key;
+                Certificate cert = keyStore.getCertificate(alias);
+                mCertificates = new X509Certificate[]{(X509Certificate) cert};
+                Log.d(TAG, "Private key and certificate loaded successfully.");
+            } else {
+                Log.w(TAG, "Key is not an instance of PrivateKey.");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load certificate: " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public void onReceivedSslError(final WebView webView, final SslErrorHandler handler, final SslError error) {
-        // onReceivedSslError is called for most requests, per Android docs: https://developer.android.com/reference/android/webkit/WebViewClient#onReceivedSslError(android.webkit.WebView,%2520android.webkit.SslErrorHandler,%2520android.net.http.SslError)
-        // WebView.getUrl() will return the top-level window URL.
-        // If a top-level navigation triggers this error handler, the top-level URL will be the failing URL (not the URL of the currently-rendered page).
-        // This is desired behavior. We later use these values to determine whether the request is a top-level navigation or a subresource request.
         String topWindowUrl = webView.getUrl();
         String failingUrl = error.getUrl();
 
-        // Cancel request after obtaining top-level URL.
-        // If request is cancelled before obtaining top-level URL, undesired behavior may occur.
-        // Undesired behavior: Return value of WebView.getUrl() may be the current URL instead of the failing URL.
+        Log.d(TAG, "Top-level URL: " + topWindowUrl);
+        Log.d(TAG, "Failing URL: " + failingUrl);
+        Log.d(TAG, "SSL error code: " + error.getPrimaryError());
+
+        RNCWebView rncWebView = (RNCWebView) webView;
+
+        // Check for presence of client certificate in passed props
+        if (rncWebView.clientCert != null) {
+            Log.d(TAG, "Client certificate available - proceeding");
+            handler.proceed();
+            return;
+        }
+
         handler.cancel();
 
         if (!topWindowUrl.equalsIgnoreCase(failingUrl)) {
-            // If error is not due to top-level navigation, then do not call onReceivedError()
-            Log.w(TAG, "Resource blocked from loading due to SSL error. Blocked URL: "+failingUrl);
+            Log.w(TAG, "Resource blocked from loading due to SSL error. Blocked URL: " + failingUrl);
             return;
         }
 
@@ -183,7 +287,6 @@ public class RNCWebViewClient extends WebViewClient {
         String description = "";
         String descriptionPrefix = "SSL error: ";
 
-        // https://developer.android.com/reference/android/net/http/SslError.html
         switch (code) {
             case SslError.SSL_DATE_INVALID:
                 description = "The date of the certificate is invalid";

@@ -32,6 +32,9 @@ import org.json.JSONObject;
 
 import java.util.Map;
 
+import android.util.Log;
+
+
 @ReactModule(name = RNCWebViewManagerImpl.NAME)
 public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         implements RNCWebViewManagerInterface<RNCWebViewWrapper> {
@@ -60,6 +63,16 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     @Override
     protected RNCWebViewWrapper createViewInstance(@NonNull ThemedReactContext context) {
         return mRNCWebViewManagerImpl.createViewInstance(context);
+    }
+
+    @ReactProp(name = "clientCertPassword")
+    public void setClientCertPassword(RNCWebViewWrapper view, @Nullable String password) {
+        mRNCWebViewManagerImpl.setClientCertPassword(view, password);
+    }
+
+    @ReactProp(name = "clientCert")
+    public void setClientCert(RNCWebViewWrapper view, @Nullable String cert) {
+        mRNCWebViewManagerImpl.setClientCert(view, cert);
     }
 
     @Override

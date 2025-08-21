@@ -96,6 +96,8 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       nativeConfig,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       injectedJavaScriptObject,
+      clientCertPassword,
+      clientCert,
       ...otherProps
     },
     ref
@@ -313,6 +315,8 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         setDisplayZoomControls={setDisplayZoomControls}
         nestedScrollEnabled={nestedScrollEnabled}
         injectedJavaScriptObject={JSON.stringify(injectedJavaScriptObject)}
+        clientCertPassword={clientCertPassword}
+        clientCert={clientCert}
         {...nativeConfig?.props}
       />
     );

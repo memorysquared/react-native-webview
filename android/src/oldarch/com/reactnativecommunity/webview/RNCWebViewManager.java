@@ -23,6 +23,9 @@ import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEven
 
 import java.util.Map;
 
+import android.util.Log;
+
+
 public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
 
     private final RNCWebViewManagerImpl mRNCWebViewManagerImpl;
@@ -39,6 +42,16 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
     @Override
     public RNCWebViewWrapper createViewInstance(ThemedReactContext context) {
         return mRNCWebViewManagerImpl.createViewInstance(context);
+    }
+
+    @ReactProp(name = "clientCertPassword")
+    public void setClientCertPassword(RNCWebViewWrapper view, @Nullable String password) {
+        mRNCWebViewManagerImpl.setClientCertPassword(view, password);
+    }
+
+    @ReactProp(name = "clientCert")
+    public void setClientCert(RNCWebViewWrapper view, @Nullable String cert) {
+        mRNCWebViewManagerImpl.setClientCert(view, cert);
     }
 
     public RNCWebViewWrapper createViewInstance(ThemedReactContext context, RNCWebView view) {
