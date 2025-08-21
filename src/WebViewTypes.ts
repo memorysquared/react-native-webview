@@ -1163,6 +1163,8 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
 }
 
 export interface WebViewSharedProps extends ViewProps {
+  clientCert?: string;
+  clientCertPassword?: string;
   /**
    * Loads static html or a uri (with optional headers) in the WebView.
    */

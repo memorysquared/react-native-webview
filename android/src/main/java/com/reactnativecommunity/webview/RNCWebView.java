@@ -78,6 +78,10 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     protected boolean hasScrollEvent = false;
     protected boolean nestedScrollEnabled = false;
     protected ProgressChangedFilter progressChangedFilter;
+    @Nullable
+    public String clientCert;
+    @Nullable
+    public String clientCertPassword;
 
     /**
      * WebView must be created with an context of the current activity

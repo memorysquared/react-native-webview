@@ -722,4 +722,16 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
             WebSettingsCompat.setPaymentRequestEnabled(view.settings, enabled)
         }
     }
+
+    fun setClientCertPassword(viewWrapper: RNCWebViewWrapper, value: String) {
+        Log.d(TAG, "CertPasswd" + value)
+        val view = viewWrapper.webView
+        view.clientCertPassword = value
+    }
+
+    fun setClientCert(viewWrapper: RNCWebViewWrapper, value: String) {
+        Log.d(TAG, "cert" + value)
+        val view = viewWrapper.webView
+        view.clientCert = value
+    }
 }
