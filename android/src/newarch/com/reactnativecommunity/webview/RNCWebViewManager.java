@@ -66,14 +66,12 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     }
 
     @ReactProp(name = "clientCertPassword")
-    public void setClientCertPassword(RNCWebViewWrapper view, String password) {
-        Log.d("RNCWebView", "clientCertPassword: " + password);
+    public void setClientCertPassword(RNCWebViewWrapper view, @Nullable String password) {
         mRNCWebViewManagerImpl.setClientCertPassword(view, password);
     }
 
     @ReactProp(name = "clientCert")
-    public void setClientCert(RNCWebViewWrapper view, String cert) {
-        Log.d("RNCWebView", "clientCert: " + cert);
+    public void setClientCert(RNCWebViewWrapper view, @Nullable String cert) {
         mRNCWebViewManagerImpl.setClientCert(view, cert);
     }
 

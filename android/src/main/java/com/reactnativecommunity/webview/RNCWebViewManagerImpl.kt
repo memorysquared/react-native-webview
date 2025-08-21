@@ -723,14 +723,12 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
         }
     }
 
-    fun setClientCertPassword(viewWrapper: RNCWebViewWrapper, value: String) {
-        Log.d(TAG, "CertPasswd" + value)
+    fun setClientCertPassword(viewWrapper: RNCWebViewWrapper, value: String?) {
         val view = viewWrapper.webView
         view.clientCertPassword = value
     }
 
-    fun setClientCert(viewWrapper: RNCWebViewWrapper, value: String) {
-        Log.d(TAG, "cert" + value)
+    fun setClientCert(viewWrapper: RNCWebViewWrapper, value: String?) {
         val view = viewWrapper.webView
         view.clientCert = value
     }
